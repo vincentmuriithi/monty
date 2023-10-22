@@ -1,29 +1,47 @@
 #include "monty.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 
-char **op_toks = NULL;
+vars var;
 
 /**
-* main - the entry point for Monty Interp
-*
-* @argc: the count of arguments passed to the program
-* @argv: pointer to an array of char pointers to arguments
-*
-* Return: (EXIT_SUCCESS) on success (EXIT_FAILURE) on error
+* main - Start LIFO, FILO program
+* @ac: Number of arguments
+* @av: Pointer containing arguments
+* Return: 0 Success, 1 Failed
 */
-int main(int argc, char **argv)
+int main(int ac, char **av)
 {
-FILE *script_fd = NULL;
-int exit_code = EXIT_SUCCESS;
+char *opcode;
 
-if (argc != 2)
-return (usage_error());
-script_fd = fopen(argv[1], "r");
-if (script_fd == NULL)
-return (f_open_error(argv[1]));
-exit_code = run_monty(script_fd);
-fclose(script_fd);
-return (exit_code);
+if (ac != 2)
+{
+fprintf(stderr, "USAGE: monty file\n");
+return (EXIT_FAILURE);
+}
+
+if (start_vars(&var) != 0)
+return (EXIT_FAILURE);
+
+var.file = fopen(av[1], "r");
+if (!var.file)
+{
+fprintf(stderr, "Error: Can't open file %s\n", av[1]);
+free_all();
+return (EXIT_FAILURE);
+}
+
+while (getline(&var.buff, &var.tmp, var.file) != EOF)
+{
+opcode = strtok(var.buff, " \r\t\n");
+if (opcode != NULL)
+if (call_funct(&var, opcode) == EXIT_FAILURE)
+{
+free_all();
+return (EXIT_FAILURE);
+}
+var.line_number++;
+}
+
+free_all();
+
+return (EXIT_SUCCESS);
 }
